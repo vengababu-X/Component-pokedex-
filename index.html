@@ -172,7 +172,7 @@
         const loader = document.getElementById('loader');
         const reportText = document.getElementById('report-text');
 
-        const apiKey = "pokedex"; // System-managed: No input required
+        const apiKey = process.env.pokedex ;
         let currentTarget = "";
         let audioContext;
 
