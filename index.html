@@ -1,0 +1,299 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>G-CORE | Omni-Vision Ultimate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            background-color: #010206;
+            color: #00f2ff;
+            font-family: 'JetBrains Mono', monospace;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .hud-font { font-family: 'Orbitron', sans-serif; }
+
+        /* Spaceship HUD Grid */
+        .hud-grid {
+            background-image: 
+                linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        /* Scanning Laser */
+        .laser-beam {
+            width: 100%;
+            height: 2px;
+            background: #00f2ff;
+            position: absolute;
+            z-index: 20;
+            box-shadow: 0 0 15px #00f2ff, 0 0 30px #00f2ff;
+            animation: scanMove 3s ease-in-out infinite;
+        }
+
+        @keyframes scanMove {
+            0%, 100% { top: 15%; opacity: 0; }
+            50% { top: 85%; opacity: 1; }
+        }
+
+        .glass-panel {
+            background: rgba(2, 4, 10, 0.95);
+            backdrop-filter: blur(25px);
+            border-top: 1px solid rgba(0, 242, 255, 0.3);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: contrast(1.1) brightness(1.1) saturate(1.2);
+        }
+
+        .bracket {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-color: #00f2ff;
+            opacity: 0.6;
+        }
+
+        /* Voice Animation */
+        .vocal-bar {
+            width: 3px;
+            background: #00f2ff;
+            margin: 0 1px;
+            animation: bounce 1s ease-in-out infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { height: 4px; }
+            50% { height: 18px; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- VIEWPORT -->
+    <div class="relative flex-grow h-[60vh] bg-black overflow-hidden">
+        <video id="v" autoplay playsinline muted></video>
+        <canvas id="cap" class="hidden"></canvas>
+        <div class="absolute inset-0 hud-grid"></div>
+
+        <!-- HUD ELEMENTS -->
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72">
+                <div class="laser-beam"></div>
+                <div class="bracket top-0 left-0 border-t-2 border-l-2 shadow-[0_0_10px_#00f2ff]"></div>
+                <div class="bracket top-0 right-0 border-t-2 border-r-2"></div>
+                <div class="bracket bottom-0 left-0 border-b-2 border-l-2"></div>
+                <div class="bracket bottom-0 right-0 border-b-2 border-r-2 shadow-[0_0_10px_#00f2ff]"></div>
+                
+                <!-- Crosshair -->
+                <div class="absolute top-1/2 left-0 w-full h-[1px] bg-cyan-500/10"></div>
+                <div class="absolute left-1/2 top-0 h-full w-[1px] bg-cyan-500/10"></div>
+            </div>
+
+            <!-- SHIP TELEMETRY -->
+            <div class="absolute top-10 left-10 text-[9px] space-y-2 opacity-70 font-mono">
+                <div class="flex items-center gap-2"><div class="w-2 h-2 bg-green-500 rounded-full animate-ping"></div> SYSTEM_READY</div>
+                <div>LENS: S20_ULTRA_OMNI</div>
+                <div>NEURAL_NET: CONNECTED</div>
+            </div>
+        </div>
+
+        <!-- AI PROCESSING OVERLAY -->
+        <div id="loader" class="hidden absolute inset-0 bg-black/85 flex flex-col items-center justify-center z-50">
+            <div class="w-24 h-24 border-2 border-cyan-900 rounded-full flex items-center justify-center relative">
+                <div class="absolute inset-0 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                <div class="flex items-end gap-1">
+                    <div class="vocal-bar" style="animation-delay: 0s"></div>
+                    <div class="vocal-bar" style="animation-delay: 0.1s"></div>
+                    <div class="vocal-bar" style="animation-delay: 0.2s"></div>
+                    <div class="vocal-bar" style="animation-delay: 0.3s"></div>
+                </div>
+            </div>
+            <p class="mt-8 text-[11px] tracking-[0.5em] animate-pulse text-cyan-400 font-bold uppercase hud-font">Decoding Matrix...</p>
+        </div>
+    </div>
+
+    <!-- COMMAND CONSOLE -->
+    <div class="flex-grow glass-panel p-8 flex flex-col overflow-hidden">
+        
+        <div id="ui-home" class="flex flex-col items-center justify-center h-full">
+            <div class="text-center mb-10">
+                <h1 class="text-2xl font-bold tracking-[0.4em] text-white hud-font">G-CORE OMNI</h1>
+                <p class="text-[10px] text-cyan-900 uppercase tracking-widest font-mono">Advanced Multimodal Inspection Unit</p>
+            </div>
+            
+            <button onclick="runUltimateScan()" class="w-full max-w-sm py-6 bg-cyan-500/5 border-2 border-cyan-500 text-cyan-400 font-bold rounded-[2rem] flex items-center justify-center gap-4 active:scale-95 transition-all uppercase tracking-[0.4em] hud-font text-sm hover:bg-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                Identify Object
+            </button>
+            
+            <p class="mt-8 text-[8px] text-gray-700 uppercase tracking-widest text-center">Point at electronics, plants, or anything in the living world</p>
+        </div>
+
+        <!-- REPORT SCREEN -->
+        <div id="ui-report" class="hidden flex flex-col h-full overflow-hidden">
+            <div class="flex justify-between items-center mb-4 border-b border-cyan-900/40 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-6 bg-cyan-500 shadow-[0_0_10px_#00f2ff]"></div>
+                    <span class="text-xs font-bold tracking-widest text-white uppercase italic hud-font">Neural Inspection Log</span>
+                </div>
+                <button onclick="resetApp()" class="text-[10px] text-cyan-700 font-bold uppercase hover:text-cyan-400">Back</button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto pr-2" id="scroll-area">
+                <div id="report-text" class="text-xs leading-relaxed text-gray-400 font-mono space-y-4">
+                    <!-- Results Injected Here -->
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-cyan-900/40 flex gap-4">
+                <button onclick="copyToLog()" class="flex-1 py-4 bg-cyan-950/20 text-[10px] text-cyan-600 rounded-2xl border border-cyan-900/40 uppercase font-bold tracking-widest">Save Log</button>
+                <button onclick="openDatasheet()" class="flex-1 py-4 bg-cyan-950/20 text-[10px] text-cyan-600 rounded-2xl border border-cyan-900/40 uppercase font-bold tracking-widest">Datasheet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const v = document.getElementById('v');
+        const cap = document.getElementById('cap');
+        const uiHome = document.getElementById('ui-home');
+        const uiReport = document.getElementById('ui-report');
+        const loader = document.getElementById('loader');
+        const reportText = document.getElementById('report-text');
+
+        const apiKey = ""; // System-managed: No input required
+        let currentTarget = "";
+        let audioContext;
+
+        window.onload = () => {
+            startSystem();
+        };
+
+        async function startSystem() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+                });
+                v.srcObject = stream;
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            } catch (err) { alert("SENSORS: Optical link failed."); }
+        }
+
+        async function runUltimateScan() {
+            loader.classList.remove('hidden');
+            
+            // Capture Frame
+            cap.width = v.videoWidth; cap.height = v.videoHeight;
+            cap.getContext('2d').drawImage(v, 0, 0);
+            const b64 = cap.toDataURL('image/png').split(',')[1];
+
+            // 1. VISION REASONING
+            const visionUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const prompt = `Inspect this object in detail. 
+            Identify if it is an electronic component (ICs, MCUs, etc.), a living world element (plants, animals), or a household item (TVs, tools).
+            Provide:
+            1. IDENTITY: Exact name.
+            2. FUNCTION: Detailed explanation of how it works.
+            3. USAGE: Step-by-step guide on how a human uses it.
+            4. TECHNICAL SPECS: Visible details or pins.
+            Tone: Professional, high-tech engineering report.`;
+
+            try {
+                const response = await fetch(visionUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/png", data: b64 } }] }] })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+
+                const result = data.candidates[0].content.parts[0].text;
+                currentTarget = result.split('\n')[0].replace('IDENTITY:', '').trim();
+
+                // 2. VOICE SYNTHESIS (TTS)
+                await speakResult(result.split('\n')[0] + ". " + result.split('\n')[1]);
+
+                // 3. UI DISPLAY
+                reportText.innerHTML = result
+                    .replace(/\n/g, '<br>')
+                    .replace(/\*\*(.*?)\*\*/g, '<b class="text-cyan-400">$1</b>');
+
+                uiHome.classList.add('hidden');
+                uiReport.classList.remove('hidden');
+            } catch (err) {
+                alert("NEURAL_FAULT: " + err.message);
+            } finally { loader.classList.add('hidden'); }
+        }
+
+        async function speakResult(text) {
+            const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: `Ship computer voice: ${text}` }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } }
+                }
+            };
+
+            try {
+                const response = await fetch(ttsUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                const pcmBase64 = data.candidates[0].content.parts[0].inlineData.data;
+                
+                // Audio Decoding Logic
+                const binary = atob(pcmBase64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                
+                const pcm16 = new Int16Array(bytes.buffer);
+                const float32 = new Float32Array(pcm16.length);
+                for (let i = 0; i < pcm16.length; i++) float32[i] = pcm16[i] / 32768.0;
+
+                const buffer = audioContext.createBuffer(1, float32.length, 24000);
+                buffer.copyToChannel(float32, 0);
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioContext.destination);
+                source.start();
+            } catch (e) { console.error("AUDIO_FAULT:", e); }
+        }
+
+        function resetApp() {
+            uiReport.classList.add('hidden');
+            uiHome.classList.remove('hidden');
+            reportText.innerHTML = "";
+        }
+
+        function copyToLog() {
+            const temp = document.createElement('textarea');
+            temp.value = reportText.innerText;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            alert("LOG: Analysis copied to clipboard.");
+        }
+
+        function openDatasheet() {
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(currentTarget + " technical details datasheet pdf")}`, '_blank');
+        }
+    </script>
+</body>
+</html>
+
+```
